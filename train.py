@@ -15,12 +15,8 @@ def main():
     env_id = default_config['EnvID']
     env_type = default_config['EnvType']
 
-    if env_type == 'mario':
-        env = BinarySpaceToDiscreteSpaceEnv(gym_super_mario_bros.make(env_id), COMPLEX_MOVEMENT)
-    elif env_type == 'atari':
-        env = gym.make(env_id)
-    else:
-        raise NotImplementedError
+    env = gym.make(env_id)
+    
     input_size = env.observation_space.shape  # 4
     output_size = env.action_space.n  # 2
 
@@ -69,12 +65,8 @@ def main():
 
     agent = RNDAgent
 
-    if default_config['EnvType'] == 'atari':
-        env_type = AtariEnvironment
-    elif default_config['EnvType'] == 'mario':
-        env_type = MarioEnvironment
-    else:
-        raise NotImplementedError
+    assert default_config['EnvType'] == 'atari'
+    env_type = AtariEnvironment
 
     agent = agent(
         input_size,
