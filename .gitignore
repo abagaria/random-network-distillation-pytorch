@@ -33,3 +33,7 @@ lib/
 # IDE files
 .idea
 *.iml
+
+# Logged files
+*.pkl
+models/*
