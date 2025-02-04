@@ -107,6 +107,7 @@ class MontezumaInfoWrapper(gym.Wrapper):
         if 'episode' not in info:
             info['episode'] = {}
         info['episode'].update(visited_rooms=copy(self.visited_rooms))
+        info['ram'] = unwrap(self.env).ale.getRAM()
 
         if done:
             self.visited_rooms.clear()
@@ -192,7 +193,7 @@ class AtariEnvironment(Environment):
                 self.history = self.reset()
 
             self.child_conn.send(
-                [self.history[:, :, :], reward, force_done, done, log_reward])
+                [self.history[:, :, :], reward, force_done, done, log_reward, info])
 
     def reset(self):
         self.last_action = 0

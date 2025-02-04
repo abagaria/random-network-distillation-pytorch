@@ -8,6 +8,8 @@ from tensorboardX import SummaryWriter
 
 import numpy as np
 
+from data_logger import DataLogger
+
 
 def main():
     print({section: dict(config[section]) for section in config.sections()})
@@ -85,6 +87,8 @@ def main():
         use_gae=use_gae,
         use_noisy_net=use_noisy_net
     )
+    
+    data_logger = DataLogger(save_dir="rnd_lifetime_data1")
 
     if is_load_model:
         print('load model...')
@@ -130,7 +134,7 @@ def main():
             parent_conn.send(action)
 
         for parent_conn in parent_conns:
-            s, r, d, rd, lr = parent_conn.recv()
+            s, r, d, rd, lr, _ = parent_conn.recv()
             next_obs.append(s[3, :, :].reshape([1, 84, 84]))
 
         if len(next_obs) % (num_step * num_worker) == 0:
@@ -152,15 +156,16 @@ def main():
             for parent_conn, action in zip(parent_conns, actions):
                 parent_conn.send(action)
 
-            next_states, rewards, dones, real_dones, log_rewards, next_obs = [], [], [], [], [], []
+            next_states, rewards, dones, real_dones, log_rewards, next_obs, infos = [], [], [], [], [], [], []
             for parent_conn in parent_conns:
-                s, r, d, rd, lr = parent_conn.recv()
+                s, r, d, rd, lr, info = parent_conn.recv()
                 next_states.append(s)
                 rewards.append(r)
                 dones.append(d)
                 real_dones.append(rd)
                 log_rewards.append(lr)
                 next_obs.append(s[3, :, :].reshape([1, 84, 84]))
+                infos.append(info)
 
             next_states = np.stack(next_states)
             rewards = np.hstack(rewards)
@@ -173,6 +178,15 @@ def main():
                 ((next_obs - obs_rms.mean) / np.sqrt(obs_rms.var)).clip(-5, 5))
             intrinsic_reward = np.hstack(intrinsic_reward)
             sample_i_rall += intrinsic_reward[sample_env_idx]
+            
+            # TODO(ab): Log when intrinsic/extinsic reward is high
+            # data_logger.add_steps(
+            #     states=next_states,
+            #     intrinsic_rewards=intrinsic_reward,
+            #     extrinsic_rewards=rewards,
+            #     info=infos,
+            #     dones=real_dones
+            # )
 
             total_next_obs.append(next_obs)
             total_int_reward.append(intrinsic_reward)
