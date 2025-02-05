@@ -17,8 +17,6 @@ class RNDAgent(object):
             input_size,
             output_size,
             num_env,
-            num_step,
-            gamma,
             lam=0.95,
             learning_rate=1e-4,
             ent_coef=0.01,
@@ -34,8 +32,6 @@ class RNDAgent(object):
         self.num_env = num_env
         self.output_size = output_size
         self.input_size = input_size
-        self.num_step = num_step
-        self.gamma = gamma
         self.lam = lam
         self.epoch = epoch
         self.batch_size = batch_size

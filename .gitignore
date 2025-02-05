@@ -4,6 +4,7 @@ logs
 __pycache__/
 models/
 runs/
+resources/
 # Runtime data
 pids
 *.pid
