@@ -8,7 +8,7 @@ from tensorboardX import SummaryWriter
 
 import numpy as np
 
-from data_logger import DataLogger
+from data_logger import DataLogger, StatTracker
 
 
 def main():
@@ -74,8 +74,6 @@ def main():
         input_size,
         output_size,
         num_worker,
-        num_step,
-        gamma,
         lam=lam,
         learning_rate=learning_rate,
         ent_coef=entropy_coef,
@@ -89,6 +87,7 @@ def main():
     )
     
     data_logger = DataLogger(save_dir="rnd_lifetime_data1")
+    reward_tracker = StatTracker()
 
     if is_load_model:
         print('load model...')
@@ -142,7 +141,7 @@ def main():
             obs_rms.update(next_obs)
             next_obs = []
     print('End to initalize...')
-
+    
     while True:
         total_state, total_reward, total_done, total_next_state, total_action, total_int_reward, total_next_obs, total_ext_values, total_int_values, total_policy, total_policy_np = \
             [], [], [], [], [], [], [], [], [], [], []
@@ -179,6 +178,23 @@ def main():
             intrinsic_reward = np.hstack(intrinsic_reward)
             sample_i_rall += intrinsic_reward[sample_env_idx]
             
+            for idx, int_rew in enumerate(intrinsic_reward):
+                reward_tracker.update(int_rew)
+                # check if intrinsic reward is 1 std away from mean or an extrinsic 
+                # reward has been achieved
+                # log reward is reward from one step
+                if (int_rew > (reward_tracker.mean()+reward_tracker.std())) or \
+                    (log_rewards[idx] > 0):
+                    #TODO need to finish this
+                    data_logger.add_steps(
+                        next_states[idx],
+                        int_rew,
+                        rewards[idx],
+                        infos[idx],
+                        dones[idx],
+                        reward_tracker.mean(),
+                        reward_tracker.std(),
+                    )
             # TODO(ab): Log when intrinsic/extinsic reward is high
             # data_logger.add_steps(
             #     states=next_states,

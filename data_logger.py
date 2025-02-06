@@ -17,13 +17,30 @@ class DataLogger:
         
         os.makedirs(save_dir, exist_ok=True)
     
-    def add_steps(self, states, intrinsic_rewards, extrinsic_rewards, info, dones):
+    def _get_save_dir(self, base_save_dir):
+        i = 0
+        while os.path.exists(base_save_dir+i):
+            i += 1
+        
+        self.save_dir = base_save_dir+i
+        
+    
+    def add_steps(self, 
+                  states, 
+                  intrinsic_rewards, 
+                  extrinsic_rewards, 
+                  info, 
+                  dones,
+                  intrin_rew_mean,
+                  intrin_rew_std):
         batch_data = {
             'states': states,
             'intrinsic_rewards': intrinsic_rewards,
             'extrinsic_rewards': extrinsic_rewards,
             'info': info,
             'dones': dones,
+            'intrinsic_reward_mean': intrin_rew_mean,
+            'intrinsic_reward_std': intrin_rew_std,
             'timestamp': time.time()
         }
         
@@ -132,3 +149,23 @@ def load_memmap_data(memmap_dir, start_idx=0, end_idx=None):
         data[key] = fp[start_idx:end_idx]
     
     return data
+
+class StatTracker():
+    def __init__(self):
+        self.count = 0
+        self.running_mean = 0
+        self.sum_sq = 0
+    
+    def update(self, reward):
+        self.count += 1
+        old_mean = self.running_mean
+        self.running_mean += (reward - self.running_mean)/self.count
+        self.sum_sq += (reward - old_mean)*(reward - self.running_mean)
+    
+    def mean(self):
+        return self.running_mean
+    
+    def std(self):
+        if self.count < 2:
+            return 0
+        return np.sqrt(self.sum_sq/(self.count-1))
