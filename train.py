@@ -27,11 +27,14 @@ def main():
 
     env.close()
 
+    data_logger = DataLogger(save_dir="rnd_lifetime_data")
+    reward_tracker = StatTracker()
+
     is_load_model = False
     is_render = False
-    model_path = 'models/{}.model'.format(env_id)
-    predictor_path = 'models/{}.pred'.format(env_id)
-    target_path = 'models/{}.target'.format(env_id)
+    model_path = '{}/{}.model'.format(data_logger.save_dir, env_id)
+    predictor_path = '{}/{}.pred'.format(data_logger.save_dir, env_id)
+    target_path = '{}/{}.target'.format(data_logger.save_dir, env_id)
 
     writer = SummaryWriter()
 
@@ -86,8 +89,6 @@ def main():
         use_noisy_net=use_noisy_net
     )
     
-    data_logger = DataLogger(save_dir="rnd_lifetime_data1")
-    reward_tracker = StatTracker()
 
     if is_load_model:
         print('load model...')

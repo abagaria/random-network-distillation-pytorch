@@ -10,19 +10,20 @@ from collections import deque
 
 class DataLogger:
     def __init__(self, save_dir, buffer_size=1000):
-        self.save_dir = save_dir
+        self._get_save_dir(save_dir)
         self.buffer_size = buffer_size
         self.buffer = deque(maxlen=buffer_size)
         self.current_file_count = 0
         
-        os.makedirs(save_dir, exist_ok=True)
+        os.makedirs(self.save_dir, exist_ok=True)
     
     def _get_save_dir(self, base_save_dir):
+        # make sure we dont overwrite data if we run on same machine
         i = 0
-        while os.path.exists(base_save_dir+i):
+        while os.path.exists(base_save_dir+str(i)):
             i += 1
         
-        self.save_dir = base_save_dir+i
+        self.save_dir = base_save_dir+str(i)
         
     
     def add_steps(self, 
