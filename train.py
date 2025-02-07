@@ -9,6 +9,7 @@ from tensorboardX import SummaryWriter
 import numpy as np
 
 from data_logger import DataLogger, StatTracker
+from attribute.attribution import Attribute
 
 
 def main():
@@ -102,18 +103,28 @@ def main():
             agent.rnd.target.load_state_dict(torch.load(target_path, map_location='cpu'))
         print('load finished!')
 
+    attribute = Attribute(agent.rnd.predictor,
+                          agent.rnd.target,
+                          agent.device,
+                          attribution_type="deep_lift_shap",
+                          segmentation_type="sam")
+
     works = []
     parent_conns = []
     child_conns = []
+    initial_state = None
     for idx in range(num_worker):
         parent_conn, child_conn = Pipe()
         work = env_type(env_id, is_render, idx, child_conn, sticky_action=sticky_action, p=action_prob,
                         life_done=life_done)
+        
         work.start()
+        initial_state = work.reset()[-1,:,:]
         works.append(work)
         parent_conns.append(parent_conn)
         child_conns.append(child_conn)
 
+    initial_state = np.expand_dims(initial_state, axis=0)
     states = np.zeros([num_worker, 4, 84, 84])
 
     sample_episode = 0
@@ -143,11 +154,16 @@ def main():
             next_obs = []
     print('End to initalize...')
     
+    
+    
     while True:
         total_state, total_reward, total_done, total_next_state, total_action, total_int_reward, total_next_obs, total_ext_values, total_int_values, total_policy, total_policy_np = \
             [], [], [], [], [], [], [], [], [], [], []
         global_step += (num_worker * num_step)
         global_update += 1
+        
+        least_int_states = np.zeros([num_worker, 1, 84, 84])
+        low_rnd_reward = np.ones([num_worker])*np.inf
 
         # Step 1. n-step rollout
         for _ in range(num_step):
@@ -180,21 +196,42 @@ def main():
             sample_i_rall += intrinsic_reward[sample_env_idx]
             
             for idx, int_rew in enumerate(intrinsic_reward):
+                if int_rew < low_rnd_reward[idx]:
+                    least_int_states[idx] = next_obs[idx]
+                    low_rnd_reward[idx] = int_rew
+                
                 reward_tracker.update(int_rew)
                 # check if intrinsic reward is 3 std away from mean or an extrinsic 
                 # reward has been achieved
                 # log reward is reward from one step
-                if (int_rew > (reward_tracker.mean()+(2*reward_tracker.std()))) or \
-                    (log_rewards[idx] > 0):
+                if (int_rew > (reward_tracker.mean()+(2*reward_tracker.std()))):
+                    _, bbox = attribute.analyze_state(next_obs[idx],
+                                                      [initial_state,
+                                                       least_int_states[idx]])
                     data_logger.add_steps(
-                        next_states[idx],
+                        next_obs[idx],
                         int_rew,
                         rewards[idx],
                         infos[idx],
                         dones[idx],
                         reward_tracker.mean(),
                         reward_tracker.std(),
+                        bbox
                     )
+                elif (log_rewards[idx] > 0):
+                    data_logger.add_steps(
+                        next_obs[idx],
+                        int_rew,
+                        rewards[idx],
+                        infos[idx],
+                        dones[idx],
+                        reward_tracker.mean(),
+                        reward_tracker.std(),
+                        bbox=None
+                    )
+                if dones[idx]:
+                    low_rnd_reward[idx] = np.inf
+                    low_rnd_reward[idx] = initial_state
             # TODO(ab): Log when intrinsic/extinsic reward is high
             # data_logger.add_steps(
             #     states=next_states,

@@ -27,21 +27,23 @@ class DataLogger:
         
     
     def add_steps(self, 
-                  states, 
-                  intrinsic_rewards, 
-                  extrinsic_rewards, 
+                  state, 
+                  intrinsic_reward, 
+                  extrinsic_reward, 
                   info, 
-                  dones,
+                  done,
                   intrin_rew_mean,
-                  intrin_rew_std):
+                  intrin_rew_std,
+                  bbox):
         batch_data = {
-            'states': states,
-            'intrinsic_rewards': intrinsic_rewards,
-            'extrinsic_rewards': extrinsic_rewards,
+            'state': state,
+            'intrinsic_reward': intrinsic_reward,
+            'extrinsic_reward': extrinsic_reward,
             'info': info,
-            'dones': dones,
+            'done': done,
             'intrinsic_reward_mean': intrin_rew_mean,
             'intrinsic_reward_std': intrin_rew_std,
+            'bbox': bbox,
             'timestamp': time.time()
         }
         
