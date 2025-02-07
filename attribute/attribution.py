@@ -79,14 +79,12 @@ class Attribute():
         # bbox in XYWH format
         max_bbox = bbox[np.argmax(ave_att)]
         
-        print(max_bbox)
-        
-        plt.imshow(max_mask)
-        plt.colorbar()
-        plt.savefig("max_mask.png")
-        plt.clf()
         
         if plot:
+            plt.imshow(max_mask)
+            plt.colorbar()
+            plt.savefig("max_mask.png")
+            plt.clf()
             
             plt_state = state.cpu().numpy()
             plt_state = np.squeeze(plt_state)
@@ -121,5 +119,5 @@ class Attribute():
             plt.clf()
 
         
-        return max_mask
+        return max_mask, max_bbox
         

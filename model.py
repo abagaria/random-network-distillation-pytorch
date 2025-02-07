@@ -157,16 +157,10 @@ class CnnActorCriticNetwork(nn.Module):
         value_int = self.critic_int(self.extra_layer(x) + x)
         return policy, value_ext, value_int
 
-
-class RNDModel(nn.Module):
-    def __init__(self, input_size, output_size):
-        super(RNDModel, self).__init__()
-
-        self.input_size = input_size
-        self.output_size = output_size
-
-        feature_output = 7 * 7 * 64
-        self.predictor = nn.Sequential(
+class RNDPredictor(nn.Module):
+    def __init__(self, feature_output=3136):
+        super().__init__()
+        self.model = nn.Sequential(
             nn.Conv2d(
                 in_channels=1,
                 out_channels=32,
@@ -192,8 +186,14 @@ class RNDModel(nn.Module):
             nn.ReLU(),
             nn.Linear(512, 512)
         )
+    
+    def forward(self, x):
+        return self.model(x)
 
-        self.target = nn.Sequential(
+class RNDTarget(nn.Module):
+    def __init__(self, feature_output=3136):
+        super().__init__()
+        self.model = nn.Sequential(
             nn.Conv2d(
                 in_channels=1,
                 out_channels=32,
@@ -215,6 +215,21 @@ class RNDModel(nn.Module):
             Flatten(),
             nn.Linear(feature_output, 512)
         )
+    
+    def forward(self, x):
+        return self.model(x)
+
+class RNDModel(nn.Module):
+    def __init__(self, input_size, output_size):
+        super(RNDModel, self).__init__()
+
+        self.input_size = input_size
+        self.output_size = output_size
+
+        feature_output = 7 * 7 * 64
+        self.predictor = RNDPredictor(feature_output)
+
+        self.target = RNDTarget(feature_output)
 
         for p in self.modules():
             if isinstance(p, nn.Conv2d):

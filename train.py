@@ -181,12 +181,11 @@ def main():
             
             for idx, int_rew in enumerate(intrinsic_reward):
                 reward_tracker.update(int_rew)
-                # check if intrinsic reward is 1 std away from mean or an extrinsic 
+                # check if intrinsic reward is 3 std away from mean or an extrinsic 
                 # reward has been achieved
                 # log reward is reward from one step
-                if (int_rew > (reward_tracker.mean()+reward_tracker.std())) or \
+                if (int_rew > (reward_tracker.mean()+(2*reward_tracker.std()))) or \
                     (log_rewards[idx] > 0):
-                    #TODO need to finish this
                     data_logger.add_steps(
                         next_states[idx],
                         int_rew,
