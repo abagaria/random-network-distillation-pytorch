@@ -231,7 +231,7 @@ def main():
                     )
                 if dones[idx]:
                     low_rnd_reward[idx] = np.inf
-                    low_rnd_reward[idx] = initial_state
+                    least_int_states[idx] = initial_state
             # TODO(ab): Log when intrinsic/extinsic reward is high
             # data_logger.add_steps(
             #     states=next_states,
