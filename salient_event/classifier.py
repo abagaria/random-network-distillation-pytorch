@@ -37,7 +37,7 @@ def classify(classifier: Dict, obs: np.ndarray) -> bool:
         return False
     
     # salient patches are in BGR so we need to convert obs to BGR as well.
-    obs = patch_lib.np2cv(obs)
+    # obs = patch_lib.np2cv(obs)
 
     # TODO(ab): do we need to subtract the background from the obs?
     
@@ -63,7 +63,7 @@ def equals_template_based(classifier1: Dict, classifier2: Dict) -> bool:
             return False
         if not patch_lib.is_similar(patch1, classifier2["salient_patches"][bb]):
             return False
-    print(f'Found a match for classifier {classifier1["classifier_id"]} and {classifier2["classifier_id"]}')
+    # print(f'Found a match for classifier {classifier1["classifier_id"]} and {classifier2["classifier_id"]}')
     return True
 
 def equals_histogram_based(classifier1: Dict, classifier2: Dict) -> bool:
@@ -81,8 +81,8 @@ def equals_histogram_based(classifier1: Dict, classifier2: Dict) -> bool:
     eq = len(matches) == len(classifier1["salient_patches"])
 
     if eq:
-        print(f'Found a match for classifier {classifier1["classifier_id"]} and {classifier2["classifier_id"]}')
-        print(f'Matches: {matches}')
+        # print(f'Found a match for classifier {classifier1["classifier_id"]} and {classifier2["classifier_id"]}')
+        # print(f'Matches: {matches}')
 
         oid2patches1 = {i: box for i, box in enumerate(classifier1["salient_patches"].keys())}
         oid2patches2 = {i: box for i, box in enumerate(classifier2["salient_patches"].keys())}
