@@ -204,7 +204,11 @@ def main():
                 # check if intrinsic reward is 3 std away from mean or an extrinsic 
                 # reward has been achieved
                 # log reward is reward from one step
-                if (int_rew > (reward_tracker.mean()+(2*reward_tracker.std()))):
+
+                if (
+                    int_rew > (reward_tracker.mean() + (2 * reward_tracker.std()))
+                    and not infos[idx]['uncontrollable']
+                ):
                     _, bbox = attribute.analyze_state(next_obs[idx],
                                                       [initial_state,
                                                        least_int_states[idx]])
@@ -231,7 +235,7 @@ def main():
                     )
                 if dones[idx]:
                     low_rnd_reward[idx] = np.inf
-                    low_rnd_reward[idx] = initial_state
+                    least_int_states[idx] = initial_state
             # TODO(ab): Log when intrinsic/extinsic reward is high
             # data_logger.add_steps(
             #     states=next_states,
@@ -328,6 +332,8 @@ def main():
         agent.train_model(np.float32(total_state) / 255., ext_target, int_target, total_action,
                           total_adv, ((total_next_obs - obs_rms.mean) / np.sqrt(obs_rms.var)).clip(-5, 5),
                           total_policy)
+        
+        # Step 6: TODO(ab): extract the most novel state in every traj and if they are very novel, log them.
 
         if global_step % (num_worker * num_step * 100) == 0:
             print('Now Global Step :{}'.format(global_step))
