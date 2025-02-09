@@ -90,6 +90,7 @@ class Segmentor():
         ax.imshow(img)
         
         plt.savefig('segmentations.png')
+        plt.close()
     
     def slic(self, image):
         segments = slic(image,
