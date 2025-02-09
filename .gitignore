@@ -38,3 +38,4 @@ lib/
 # Logged files
 *.pkl
 models/*
+*.png
