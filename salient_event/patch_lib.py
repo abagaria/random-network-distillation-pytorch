@@ -144,15 +144,19 @@ def are_bounding_boxes_similar(box1, patch1, box2, patch2, iou_threshold=0.5):
     intersection_area = (x_right - x_left) * (y_bottom - y_top)
     box1_area = w1 * h1
     box2_area = w2 * h2
-    iou = intersection_area / float(box1_area + box2_area - intersection_area)
+    denominator = float(box1_area + box2_area - intersection_area)
+
+    iou = intersection_area / denominator if denominator > 0 else 0
     
     # Check if IoU is above the threshold
     if iou < iou_threshold:
         return False
     
     # Compare color histograms
-    hist1 = cv2.calcHist([patch1], [0, 1, 2], None, [8, 8, 8], [0, 256, 0, 256, 0, 256])
-    hist2 = cv2.calcHist([patch2], [0, 1, 2], None, [8, 8, 8], [0, 256, 0, 256, 0, 256])
+    # hist1 = cv2.calcHist([patch1], [0, 1, 2], None, [8, 8, 8], [0, 256, 0, 256, 0, 256])
+    # hist2 = cv2.calcHist([patch2], [0, 1, 2], None, [8, 8, 8], [0, 256, 0, 256, 0, 256])
+    hist1 = cv2.calcHist([patch1.astype(np.uint8)], [0], None, [32], [0, 256])
+    hist2 = cv2.calcHist([patch2.astype(np.uint8)], [0], None, [32], [0, 256])
     
     hist1 = cv2.normalize(hist1, hist1).flatten()
     hist2 = cv2.normalize(hist2, hist2).flatten()
@@ -215,7 +219,7 @@ def extract_patch(image, bbox):
 
 
 def is_similar(patch1, patch2):
-    res = cv2.matchTemplate(patch1, patch2, cv2.TM_CCOEFF_NORMED)
+    res = cv2.matchTemplate(patch1.astype(np.uint8), patch2.astype(np.uint8), cv2.TM_CCOEFF_NORMED)
     _, val, _, _ = cv2.minMaxLoc(res)
     return val > TEMPLATE_MATCHING_THRESHOLD
 
