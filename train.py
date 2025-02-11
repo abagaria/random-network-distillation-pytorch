@@ -216,12 +216,20 @@ def main():
             attribute_mask = attribute_mask & dones
             
             if any(attribute_mask):
-                baselines = (
-                    torch.from_numpy(np.stack([
+                baselines = []
+                for least_int_state in least_int_states[attribute_mask]:
+                    baselines.append(torch.from_numpy(np.stack([
                         initial_state/255.0,
                         least_int_state/255.0
-                    ])).float().to(attribute.device) for least_int_state in least_int_states[attribute_mask]
-                )
+                    ])).float().to(attribute.device))
+                baselines = tuple(baselines)
+                
+                # baselines = (
+                #     torch.from_numpy(np.stack([
+                #         initial_state/255.0,
+                #         least_int_state/255.0
+                #     ])).float().to(attribute.device) for least_int_state in least_int_states[attribute_mask]
+                # )
                 attributions = attribute.analyze_state(most_int_states[attribute_mask], baselines)
                 print("=======================================")
                 print("=======================================")
