@@ -58,8 +58,10 @@ class Attribute():
             state = torch.from_numpy(state/255.0).float().to(self.device)
             # state = state.unsqueeze(0).to(self.device)
         
-        baselines = np.array(baselines)
-        baselines = torch.from_numpy(baselines/255.0).float().to(self.device)
+        # baselines = np.array(baselines)
+        # print(state.shape)
+        # print(baselines.shape)
+        # baselines = torch.from_numpy(baselines/255.0).float().to(self.device)
         
         if self.ave_baselines:
             baselines = torch.mean(baselines, dim=0, keepdim=True)

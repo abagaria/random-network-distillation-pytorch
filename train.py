@@ -216,13 +216,20 @@ def main():
             attribute_mask = attribute_mask & dones
             
             if any(attribute_mask):
-                baselines = [
-                    [
-                        initial_state,
-                        least_int_state
-                    ] for least_int_state in least_int_states[attribute_mask]
-                ]
+                baselines = (
+                    torch.from_numpy(np.stack([
+                        initial_state/255.0,
+                        least_int_state/255.0
+                    ])).float().to(attribute.device) for least_int_state in least_int_states[attribute_mask]
+                )
                 attributions = attribute.analyze_state(most_int_states[attribute_mask], baselines)
+                print("=======================================")
+                print("=======================================")
+                print("=======================================")
+                print(attributions.shape)
+                print("=======================================")
+                print("=======================================")
+                print("=======================================")
                 
                 idxs = np.where(attribute_mask)[0]
                 for a_idx in range(len(attributions)):
@@ -237,7 +244,7 @@ def main():
                         attributions[a_idx]
                     )
             
-            ext_mask = log_rewards > 0
+            ext_mask = np.array(log_rewards) > 0
             ext_idxs = np.where(ext_mask)[0]
             for e_idx in ext_idxs:
                 data_logger.add_steps(
