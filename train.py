@@ -244,9 +244,9 @@ def main():
                 data_logger.add_steps(
                     next_obs[e_idx],
                     intrinsic_reward[e_idx],
-                    rewards[ext_idxs],
-                    infos[ext_idxs],
-                    dones[ext_idxs],
+                    rewards[e_idx],
+                    infos[e_idx],
+                    dones[e_idx],
                     reward_tracker.mean(),
                     reward_tracker.std(),
                     attribution=None
