@@ -34,7 +34,7 @@ class DataLogger:
                   done,
                   intrin_rew_mean,
                   intrin_rew_std,
-                  bbox):
+                  attribution):
         batch_data = {
             'state': state,
             'intrinsic_reward': intrinsic_reward,
@@ -43,7 +43,7 @@ class DataLogger:
             'done': done,
             'intrinsic_reward_mean': intrin_rew_mean,
             'intrinsic_reward_std': intrin_rew_std,
-            'bbox': bbox,
+            'attribution': attribution,
             'timestamp': time.time()
         }
         
@@ -159,11 +159,11 @@ class StatTracker():
         self.running_mean = 0
         self.sum_sq = 0
     
-    def update(self, reward):
-        self.count += 1
+    def update(self, rewards):
+        self.count += len(rewards)
         old_mean = self.running_mean
-        self.running_mean += (reward - self.running_mean)/self.count
-        self.sum_sq += (reward - old_mean)*(reward - self.running_mean)
+        self.running_mean += np.sum(rewards - self.running_mean)/self.count
+        self.sum_sq += np.sum((rewards - old_mean)*(rewards - self.running_mean))
     
     def mean(self):
         return self.running_mean

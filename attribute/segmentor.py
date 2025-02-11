@@ -10,6 +10,8 @@ from skimage import morphology
 from skimage.measure import label
 from skimage.filters import threshold_otsu
 
+import time
+
 TYPES = [
     "sam",
     "slic",
@@ -20,7 +22,7 @@ TYPES = [
 
 class Segmentor():
     def __init__(self,
-                 segment_type,
+                 segment_type="sam",
                  device="cuda",
                  n_segments=100,
                  compactness=1,
@@ -44,11 +46,15 @@ class Segmentor():
         if self.type == "sam":
             model = sam_model_registry["vit_h"]("sam_vit_h_4b8939.pth")
             model.to(self.device)
-            self.mask_generator = SamAutomaticMaskGenerator(model)
+            self.mask_generator = SamAutomaticMaskGenerator(model,
+                                                            points_per_side=24)
         
     def segment(self, image, plot=False):
         if type(image) == torch.Tensor:
             image = image.numpy()
+        
+        if np.max(image) < 1:
+            image = image*255
         
         image = np.squeeze(image)
         
@@ -70,6 +76,9 @@ class Segmentor():
         
         if plot:
             self.plot_masks(lst_mask)
+            plt.imshow(image[:,:,0])
+            plt.savefig("original")
+            plt.cla()
         
         return lst_mask, bbox
     

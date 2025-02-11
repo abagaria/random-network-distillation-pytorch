@@ -8,6 +8,9 @@ from typing import List, Dict
 from salient_event import patch_lib
 from salient_event import classifier as classifier_lib
 
+from attribute.segmentor import Segmentor
+import cv2
+
 
 def plot_classifier(classifier: Dict, output_dir: str):
     """Plot the prototype image with bounding box for a classifier."""
@@ -77,7 +80,10 @@ def plot_classifier_comparison(existing_classifier: Dict, new_classifier: Dict, 
     plt.close()
 
 
-def create_classifiers_from_data(data_dir: str, base_plotting_dir: str = "classifier_plots"):
+def create_classifiers_from_data(data_dir: str, 
+                                 segmentor: Segmentor, 
+                                 thershold: float,
+                                 base_plotting_dir: str = "classifier_plots"):
     """Process all data points and create unique classifiers."""
     
     # Create plotting directories
@@ -99,24 +105,39 @@ def create_classifiers_from_data(data_dir: str, base_plotting_dir: str = "classi
         if data_point['bbox'] is None:
             continue
         
-        # Create salient patches dictionary
-        bbox = tuple(int(x) for x in data_point['bbox'])
-        
-        x, y, w, h = bbox
-        
-        # Skip if bbox width or height is <= 1
-        if w <= 1 or h <= 1 or w*h <= 4:
-            continue
-        
         state = data_point['state'].squeeze(0)
         
-        # Extract the patch corresponding to the bbox
-        salient_patch = patch_lib.extract_patch(
-            state,
-            bbox
-        )
+        state_seg = cv2.cvtColor(state, cv2.COLOR_GRAY2RGB)
+        segments, bbox = segmentor.segment(state_seg)
+        attribution = data_point['attribution']
+        ave_att = []
+        for idx, m in enumerate(segments):
+            ave_att.append(np.mean(attribution[m]))
         
-        salient_patches = {bbox: salient_patch}
+        norm_att = (ave_att-np.min(ave_att))/(np.max(ave_att)-np.min(ave_att))
+        keep_bboxes = bbox[norm_att >= threshold]
+        
+        # Create salient patches dictionary
+        salient_patches = {}
+        for bbox in keep_bboxes:
+            bbox = tuple(int(x) for x in data_point['bbox'])
+        
+            x, y, w, h = bbox
+        
+            # Skip if bbox width or height is <= 1
+            if w <= 1 or h <= 1 or w*h <= 4:
+                continue
+        
+            # Extract the patch corresponding to the bbox
+            salient_patch = patch_lib.extract_patch(
+                state,
+                bbox
+            )
+            
+            salient_patches[bbox] = salient_patch
+        
+        if len(salient_patches) == 0:
+            continue
         
         # Create new classifier
         new_classifier = classifier_lib.create_classifier(
@@ -182,12 +203,19 @@ def save_classifiers(classifiers: List[Dict], save_dir: str):
 
 
 if __name__ == "__main__":
-    data_dir = "rnd_lifetime_data5"
+    data_dir = "rnd_lifetime_data2"
     save_dir = "classifiers"
     plot_dir = "classifier_plots"
+    threshold = 0.8
+    
+    
+    segmentor = Segmentor()
     
     # Create classifiers
-    classifiers = create_classifiers_from_data(data_dir, plot_dir)
+    classifiers = create_classifiers_from_data(data_dir, 
+                                               segmentor,
+                                               threshold,
+                                               plot_dir)
     
     # Save classifiers
     save_classifiers(classifiers, save_dir)

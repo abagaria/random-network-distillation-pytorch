@@ -164,6 +164,10 @@ def main():
         
         least_int_states = np.zeros([num_worker, 1, 84, 84])
         low_rnd_reward = np.ones([num_worker])*np.inf
+        
+        most_int_states = np.zeros([num_worker, 1, 84, 84])
+        high_rnd_reward = np.ones([num_worker])*(-np.inf)
+        most_int_infos = [{}]*num_worker
 
         # Step 1. n-step rollout
         for _ in range(num_step):
@@ -195,55 +199,105 @@ def main():
             intrinsic_reward = np.hstack(intrinsic_reward)
             sample_i_rall += intrinsic_reward[sample_env_idx]
             
-            for idx, int_rew in enumerate(intrinsic_reward):
-                if int_rew < low_rnd_reward[idx]:
-                    least_int_states[idx] = next_obs[idx]
-                    low_rnd_reward[idx] = int_rew
+            reward_tracker.update(intrinsic_reward)
+            new_low_mask = intrinsic_reward < low_rnd_reward
+            least_int_states[new_low_mask] = next_obs[new_low_mask]
+            low_rnd_reward[new_low_mask] = intrinsic_reward[new_low_mask]
+            
+            uncontrollable = [info["uncontrollable"] for info in infos]
+            uncontrollable = np.array(uncontrollable, dtype=bool)
+            new_high_mask = intrinsic_reward > high_rnd_reward
+            new_high_mask = new_high_mask & ~uncontrollable
+            most_int_states[new_high_mask] = next_obs[new_high_mask]
+            high_rnd_reward[new_high_mask] = intrinsic_reward[new_high_mask]
+            most_int_infos = [infos[i] if new_high_mask[i] else most_int_infos[i] for i in range(len(new_high_mask))]
+            
+            attribute_mask = high_rnd_reward > (reward_tracker.mean() + 2*reward_tracker.std())
+            attribute_mask = attribute_mask & dones
+            
+            if any(attribute_mask):
+                baselines = [
+                    [
+                        initial_state,
+                        least_int_state
+                    ] for least_int_state in least_int_states[attribute_mask]
+                ]
+                attributions = attribute.analyze_state(most_int_states[attribute_mask], baselines)
                 
-                reward_tracker.update(int_rew)
-                # check if intrinsic reward is 3 std away from mean or an extrinsic 
-                # reward has been achieved
-                # log reward is reward from one step
-
-                if (
-                    int_rew > (reward_tracker.mean() + (2 * reward_tracker.std()))
-                    and not infos[idx]['uncontrollable']
-                ):
-                    _, bbox = attribute.analyze_state(next_obs[idx],
-                                                      [initial_state,
-                                                       least_int_states[idx]])
+                idxs = np.where(attribute_mask)[0]
+                for a_idx in range(len(attributions)):
                     data_logger.add_steps(
-                        next_obs[idx],
-                        int_rew,
-                        rewards[idx],
-                        infos[idx],
-                        dones[idx],
+                        most_int_states[idxs[a_idx]],
+                        high_rnd_reward[idxs[a_idx]],
+                        rewards[idxs[a_idx]],
+                        most_int_infos[idxs[a_idx]],
+                        dones[idxs[a_idx]],
                         reward_tracker.mean(),
                         reward_tracker.std(),
-                        bbox
+                        attributions[a_idx]
                     )
-                elif (log_rewards[idx] > 0):
-                    data_logger.add_steps(
-                        next_obs[idx],
-                        int_rew,
-                        rewards[idx],
-                        infos[idx],
-                        dones[idx],
-                        reward_tracker.mean(),
-                        reward_tracker.std(),
-                        bbox=None
-                    )
-                if dones[idx]:
-                    low_rnd_reward[idx] = np.inf
-                    least_int_states[idx] = initial_state
-            # TODO(ab): Log when intrinsic/extinsic reward is high
-            # data_logger.add_steps(
-            #     states=next_states,
-            #     intrinsic_rewards=intrinsic_reward,
-            #     extrinsic_rewards=rewards,
-            #     info=infos,
-            #     dones=real_dones
-            # )
+            
+            ext_mask = log_rewards > 0
+            ext_idxs = np.where(ext_mask)[0]
+            for e_idx in ext_idxs:
+                data_logger.add_steps(
+                    next_obs[e_idx],
+                    intrinsic_reward[e_idx],
+                    rewards[ext_idxs],
+                    infos[ext_idxs],
+                    dones[ext_idxs],
+                    reward_tracker.mean(),
+                    reward_tracker.std(),
+                    attribution=None
+                )
+            
+            
+            # for idx, int_rew in enumerate(intrinsic_reward):
+            #     if int_rew < low_rnd_reward[idx]:
+            #         least_int_states[idx] = next_obs[idx]
+            #         low_rnd_reward[idx] = int_rew
+                
+            #     if (int_rew > high_rnd_reward[idx]) and (not infos[idx]["uncontrollable"]):
+            #         most_int_states[idx] = next_obs[idx]
+            #         high_rnd_reward[idx] = int_rew
+                
+            #     reward_tracker.update(int_rew)
+                
+            #     if dones[idx]:
+            #         if (high_rnd_reward[idx] > (reward_tracker.mean() + (reward_tracker.std()))):
+            #             attribution = attribute.analyze_state(most_int_states[idx],
+            #                                               [initial_state,
+            #                                                least_int_states[idx]])
+            #             data_logger.add_steps(
+            #                 next_obs[idx],
+            #                 int_rew,
+            #                 rewards[idx],
+            #                 infos[idx],
+            #                 dones[idx],
+            #                 reward_tracker.mean(),
+            #                 reward_tracker.std(),
+            #                 attribution
+            #             )
+                        
+            #         low_rnd_reward[idx] = np.inf
+            #         least_int_states[idx] = initial_state
+                    
+            #         high_rnd_reward[idx] = -np.inf
+            #         most_int_states[idx] = initial_state
+            #     # check if intrinsic reward is 3 std away from mean or an extrinsic 
+            #     # reward has been achieved
+            #     # log reward is reward from one step
+            #     if (log_rewards[idx] > 0):
+            #         data_logger.add_steps(
+            #             next_obs[idx],
+            #             int_rew,
+            #             rewards[idx],
+            #             infos[idx],
+            #             dones[idx],
+            #             reward_tracker.mean(),
+            #             reward_tracker.std(),
+            #             attribution=None
+            #         )
 
             total_next_obs.append(next_obs)
             total_int_reward.append(intrinsic_reward)
