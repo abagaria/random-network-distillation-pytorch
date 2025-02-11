@@ -223,21 +223,7 @@ def main():
                         least_int_state/255.0
                     ])).float().to(attribute.device))
                 baselines = tuple(baselines)
-                
-                # baselines = (
-                #     torch.from_numpy(np.stack([
-                #         initial_state/255.0,
-                #         least_int_state/255.0
-                #     ])).float().to(attribute.device) for least_int_state in least_int_states[attribute_mask]
-                # )
                 attributions = attribute.analyze_state(most_int_states[attribute_mask], baselines)
-                print("=======================================")
-                print("=======================================")
-                print("=======================================")
-                print(attributions.shape)
-                print("=======================================")
-                print("=======================================")
-                print("=======================================")
                 
                 idxs = np.where(attribute_mask)[0]
                 for a_idx in range(len(attributions)):
