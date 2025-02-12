@@ -19,15 +19,16 @@ def plot_classifier(classifier: Dict, output_dir: str):
     
     # Get prototype image and bbox
     image = classifier['prototype_image']
-    bbox = list(classifier['salient_patches'].keys())[0]  # Get the first (and only) bbox
-    x, y, w, h = bbox
+    bboxes = list(classifier['salient_patches'].keys())
     
     # Plot image
     plt.imshow(image, cmap='gray')
     
-    # Add bounding box
-    rect = plt.Rectangle((x, y), w, h, fill=False, edgecolor='red', linewidth=2)
-    plt.gca().add_patch(rect)
+    for bbox in bboxes:
+        # Add bounding box
+        x, y, w, h = bbox
+        rect = plt.Rectangle((x, y), w, h, fill=False, edgecolor='red', linewidth=2)
+        plt.gca().add_patch(rect)
     
     # Add classifier ID and bbox dimensions as title
     plt.title(f"Classifier {classifier['classifier_id']} - bbox: {w}x{h}")
@@ -48,23 +49,25 @@ def plot_classifier_comparison(existing_classifier: Dict, new_classifier: Dict, 
     
     # Plot existing classifier
     image1 = existing_classifier['prototype_image']
-    bbox1 = list(existing_classifier['salient_patches'].keys())[0]
-    x1, y1, w1, h1 = bbox1
+    bboxes1 = list(existing_classifier['salient_patches'].keys())
     
     ax1.imshow(image1, cmap='gray')
-    rect1 = plt.Rectangle((x1, y1), w1, h1, fill=False, edgecolor='red', linewidth=2)
-    ax1.add_patch(rect1)
+    for bbox1 in bboxes1:
+        x1, y1, w1, h1 = bbox1
+        rect1 = plt.Rectangle((x1, y1), w1, h1, fill=False, edgecolor='red', linewidth=2)
+        ax1.add_patch(rect1)
     ax1.set_title(f"Existing Classifier {existing_classifier['classifier_id']} - bbox: {w1}x{h1}")
     ax1.axis('off')
     
     # Plot new classifier
     image2 = new_classifier['prototype_image']
-    bbox2 = list(new_classifier['salient_patches'].keys())[0]
-    x2, y2, w2, h2 = bbox2
+    bboxes2 = list(new_classifier['salient_patches'].keys())
     
     ax2.imshow(image2, cmap='gray')
-    rect2 = plt.Rectangle((x2, y2), w2, h2, fill=False, edgecolor='red', linewidth=2)
-    ax2.add_patch(rect2)
+    for bbox2 in bboxes2:
+        x2, y2, w2, h2 = bbox2
+        rect2 = plt.Rectangle((x2, y2), w2, h2, fill=False, edgecolor='red', linewidth=2)
+        ax2.add_patch(rect2)
     ax2.set_title(f"Rejected New Classifier - bbox: {w2}x{h2}")
     ax2.axis('off')
     
@@ -102,25 +105,28 @@ def create_classifiers_from_data(data_dir: str,
     
     for data_point in tqdm(all_data, desc="Creating classifiers"):
         # Skip if bbox is None (this happens for extrinsically rewarding transitions)
-        if data_point['bbox'] is None:
+        if data_point['attribution'] is None:
             continue
         
         state = data_point['state'].squeeze(0)
         
-        state_seg = cv2.cvtColor(state, cv2.COLOR_GRAY2RGB)
-        segments, bbox = segmentor.segment(state_seg)
-        attribution = data_point['attribution']
+        state_seg = state.astype(np.uint8)
+        
+        state_seg = cv2.cvtColor(state_seg, cv2.COLOR_GRAY2RGB)
+        segments, bboxes = segmentor.segment(state_seg)
+        attribution = data_point['attribution'].squeeze()
         ave_att = []
-        for idx, m in enumerate(segments):
+        for m in segments:
             ave_att.append(np.mean(attribution[m]))
         
         norm_att = (ave_att-np.min(ave_att))/(np.max(ave_att)-np.min(ave_att))
-        keep_bboxes = bbox[norm_att >= threshold]
+        keep_mask = norm_att >= threshold
+        keep_bboxes = [bbox for bbox, mask in zip(bboxes, keep_mask) if mask]
         
         # Create salient patches dictionary
         salient_patches = {}
         for bbox in keep_bboxes:
-            bbox = tuple(int(x) for x in data_point['bbox'])
+            bbox = tuple(int(x) for x in bbox)
         
             x, y, w, h = bbox
         
