@@ -34,7 +34,9 @@ class DataLogger:
                   done,
                   intrin_rew_mean,
                   intrin_rew_std,
-                  attribution):
+                  attribution_init,
+                  attribution_low,
+                  attribution_rand):
         batch_data = {
             'state': state,
             'intrinsic_reward': intrinsic_reward,
@@ -43,7 +45,9 @@ class DataLogger:
             'done': done,
             'intrinsic_reward_mean': intrin_rew_mean,
             'intrinsic_reward_std': intrin_rew_std,
-            'attribution': attribution,
+            'attribution_init': attribution_init,
+            'attribution_low': attribution_low,
+            'attribution_rand': attribution_rand,
             'timestamp': time.time()
         }
         

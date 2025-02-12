@@ -85,7 +85,8 @@ def plot_classifier_comparison(existing_classifier: Dict, new_classifier: Dict, 
 
 def create_classifiers_from_data(data_dir: str, 
                                  segmentor: Segmentor, 
-                                 thershold: float,
+                                 threshold: float,
+                                 att_type: str,
                                  base_plotting_dir: str = "classifier_plots"):
     """Process all data points and create unique classifiers."""
     
@@ -105,7 +106,7 @@ def create_classifiers_from_data(data_dir: str,
     
     for data_point in tqdm(all_data, desc="Creating classifiers"):
         # Skip if bbox is None (this happens for extrinsically rewarding transitions)
-        if data_point['attribution'] is None:
+        if data_point[f'attribution_{att_type}'] is None:
             continue
         
         state = data_point['state'].squeeze(0)
@@ -114,7 +115,7 @@ def create_classifiers_from_data(data_dir: str,
         
         state_seg = cv2.cvtColor(state_seg, cv2.COLOR_GRAY2RGB)
         segments, bboxes = segmentor.segment(state_seg)
-        attribution = data_point['attribution'].squeeze()
+        attribution = data_point[f'attribution_{att_type}'].squeeze()
         ave_att = []
         for m in segments:
             ave_att.append(np.mean(attribution[m]))
@@ -213,6 +214,11 @@ if __name__ == "__main__":
     save_dir = "classifiers"
     plot_dir = "classifier_plots"
     threshold = 0.8
+    # attr_type options = ["init", "low", "rand"]
+    # init uses only initial state
+    # low uses all low states from all complete runs and initial state
+    # rand uses a sample using torch.rand()
+    attr_type = "low"
     
     
     segmentor = Segmentor()
