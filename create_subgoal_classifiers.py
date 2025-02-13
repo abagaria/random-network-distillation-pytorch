@@ -85,10 +85,12 @@ def plot_classifier_comparison(existing_classifier: Dict, new_classifier: Dict, 
 
 def create_classifiers_from_data(data_dir: str, 
                                  segmentor: Segmentor, 
-                                 threshold: float,
                                  att_type: str,
+                                 threshold = None,
                                  base_plotting_dir: str = "classifier_plots"):
     """Process all data points and create unique classifiers."""
+    
+        
     
     # Create plotting directories
     os.makedirs(base_plotting_dir, exist_ok=True)
@@ -103,6 +105,10 @@ def create_classifiers_from_data(data_dir: str,
     next_classifier_id = 0
     
     print(f"Processing {len(all_data)} data points...")
+    
+    calculate_threshold = False
+    if threshold is None:
+        calculate_threshold = True
     
     for data_point in tqdm(all_data, desc="Creating classifiers"):
         # Skip if bbox is None (this happens for extrinsically rewarding transitions)
@@ -120,7 +126,12 @@ def create_classifiers_from_data(data_dir: str,
         for m in segments:
             ave_att.append(np.mean(attribution[m]))
         
-        norm_att = (ave_att-np.min(ave_att))/(np.max(ave_att)-np.min(ave_att))
+        if calculate_threshold:
+            norm_att = ave_att
+            threshold = np.mean(norm_att) + np.std(norm_att)
+        else:
+            norm_att = (ave_att-np.min(ave_att))/(np.max(ave_att)-np.min(ave_att))
+        
         keep_mask = norm_att >= threshold
         keep_bboxes = [bbox for bbox, mask in zip(bboxes, keep_mask) if mask]
         
@@ -212,8 +223,8 @@ def save_classifiers(classifiers: List[Dict], save_dir: str):
 if __name__ == "__main__":
     data_dir = "rnd_lifetime_data2"
     save_dir = "classifiers"
-    plot_dir = "classifier_plots"
-    threshold = 0.6
+    plot_dir = "classifier_plots_low"
+    threshold = None
     # attr_type options = ["init", "low", "rand"]
     # init uses only initial state
     # low uses all low states from all complete runs and initial state
@@ -226,8 +237,8 @@ if __name__ == "__main__":
     # Create classifiers
     classifiers = create_classifiers_from_data(data_dir, 
                                                segmentor,
-                                               threshold,
                                                attr_type,
+                                               threshold,
                                                plot_dir)
     
     # Save classifiers
