@@ -213,7 +213,7 @@ if __name__ == "__main__":
     data_dir = "rnd_lifetime_data2"
     save_dir = "classifiers"
     plot_dir = "classifier_plots"
-    threshold = 0.8
+    threshold = 0.6
     # attr_type options = ["init", "low", "rand"]
     # init uses only initial state
     # low uses all low states from all complete runs and initial state
@@ -227,6 +227,7 @@ if __name__ == "__main__":
     classifiers = create_classifiers_from_data(data_dir, 
                                                segmentor,
                                                threshold,
+                                               attr_type,
                                                plot_dir)
     
     # Save classifiers
