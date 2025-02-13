@@ -46,8 +46,7 @@ class Segmentor():
         if self.type == "sam":
             model = sam_model_registry["vit_h"]("sam_vit_h_4b8939.pth")
             model.to(self.device)
-            self.mask_generator = SamAutomaticMaskGenerator(model,
-                                                            points_per_side=24)
+            self.mask_generator = SamAutomaticMaskGenerator(model)
         
     def segment(self, image, plot=False):
         if type(image) == torch.Tensor:
