@@ -124,7 +124,11 @@ def create_classifiers_from_data(data_dir: str,
         attribution = data_point[f'attribution_{att_type}'].squeeze()
         ave_att = []
         for m in segments:
-            ave_att.append(np.mean(attribution[m]))
+            # to ignore zero values in image set 0 to nan
+            # and use nanmean
+            att = attribution[m]
+            att[att==0] = np.nan
+            ave_att.append(np.nanmean(attribution[m]))
         
         if calculate_threshold:
             norm_att = ave_att
