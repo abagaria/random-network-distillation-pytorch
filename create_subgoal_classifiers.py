@@ -10,6 +10,7 @@ from salient_event import classifier as classifier_lib
 
 from attribute.segmentor import Segmentor
 import cv2
+import argparse
 
 
 def plot_classifier(classifier: Dict, output_dir: str):
@@ -225,17 +226,26 @@ def save_classifiers(classifiers: List[Dict], save_dir: str):
 
 
 if __name__ == "__main__":
-    data_dir = "rnd_lifetime_data2"
-    save_dir = "classifiers"
-    plot_dir = "classifier_plots_low"
-    threshold = None
+    parser = argparse.ArgumentParser()
+    
+    parser.add_argument("--data_dir", type=str, default="rnd_lifetime_data1")
+    parser.add_argument("--save_dir", type=str, default="classifiers")
+    parser.add_argument("--plot_dir", type=str, default="classifier_plots")
+    parser.add_argument("--threshold", type=float)
+    parser.add_argument("--attr_type", type=str, choices=["init", "low", "rand"], default="low")
+
     # attr_type options = ["init", "low", "rand"]
     # init uses only initial state
     # low uses all low states from all complete runs and initial state
     # rand uses a sample using torch.rand()
-    attr_type = "low"
     
-    
+    args = parser.parse_args()
+    data_dir = args.data_dir
+    attr_type = args.attr_type
+    threshold = args.threshold
+    plot_dir = args.plot_dir
+    save_dir = args.save_dir
+        
     segmentor = Segmentor()
     
     # Create classifiers
