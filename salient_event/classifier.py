@@ -66,6 +66,14 @@ def equals_template_based(classifier1: Dict, classifier2: Dict) -> bool:
     # print(f'Found a match for classifier {classifier1["classifier_id"]} and {classifier2["classifier_id"]}')
     return True
 
+def same_state(classifier1: Dict, classifier2: Dict) -> bool:
+    return patch_lib.are_bounding_boxes_similar((1,1,1,1), 
+                                                classifier1["prototype_image"], 
+                                                (1,1,1,1), 
+                                                classifier2["prototype_image"],
+                                                iou_threshold=0)
+        
+
 def equals_histogram_based(classifier1: Dict, classifier2: Dict) -> bool:
     if len(classifier1["salient_patches"]) != len(classifier2["salient_patches"]):
         return False
