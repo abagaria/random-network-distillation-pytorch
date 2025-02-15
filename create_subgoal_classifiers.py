@@ -87,6 +87,7 @@ def plot_classifier_comparison(existing_classifier: Dict, new_classifier: Dict, 
 def create_classifiers_from_data(data_dir: str, 
                                  segmentor: Segmentor, 
                                  att_type: str,
+                                 filter_same_states: bool,
                                  threshold = None,
                                  base_plotting_dir: str = "classifier_plots"):
     """Process all data points and create unique classifiers."""
@@ -186,8 +187,19 @@ def create_classifiers_from_data(data_dir: str,
                 )
                 break
         
+        is_replacing = False
+        
+        if filter_same_states:
+            # making sure we dont make copy and change original
+            for idx in range(len(classifiers)):
+                if classifier_lib.same_state(classifiers[idx], new_classifier):
+                    classifiers[idx]["salient_patches"] = new_classifier["salient_patches"]
+                    classifiers[idx]["prototype_info_vector"] = new_classifier["prototype_info_vector"]
+                    is_replacing = True
+                    break
+        
         # If not redundant, assign ID, add to list, and plot
-        if not is_redundant:
+        if not is_redundant and not is_replacing:
             new_classifier = classifier_lib.assign_id(new_classifier, next_classifier_id)
             classifiers.append(new_classifier)
             plot_classifier(new_classifier, base_plotting_dir)
@@ -233,6 +245,7 @@ if __name__ == "__main__":
     parser.add_argument("--plot_dir", type=str, default="classifier_plots")
     parser.add_argument("--threshold", type=float)
     parser.add_argument("--attr_type", type=str, choices=["init", "low", "rand"], default="low")
+    parser.add_argument("--filter", action="store_true")
 
     # attr_type options = ["init", "low", "rand"]
     # init uses only initial state
@@ -245,6 +258,7 @@ if __name__ == "__main__":
     threshold = args.threshold
     plot_dir = args.plot_dir
     save_dir = args.save_dir
+    filtr = args.filter
         
     segmentor = Segmentor()
     
@@ -252,6 +266,7 @@ if __name__ == "__main__":
     classifiers = create_classifiers_from_data(data_dir, 
                                                segmentor,
                                                attr_type,
+                                               filtr,
                                                threshold,
                                                plot_dir)
     
