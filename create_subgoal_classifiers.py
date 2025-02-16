@@ -199,7 +199,7 @@ def create_classifiers_from_data(data_dir: str,
                     break
         
         # If not redundant, assign ID, add to list, and plot
-        if not is_redundant and not is_replacing:
+        if not is_redundant and is_replacing:
             new_classifier = classifier_lib.assign_id(new_classifier, next_classifier_id)
             classifiers.append(new_classifier)
             plot_classifier(new_classifier, base_plotting_dir)
