@@ -130,7 +130,7 @@ def create_classifiers_from_data(data_dir: str,
             # and use nanmean
             att = attribution[m]
             att[att==0] = np.nan
-            ave_att.append(np.nanmean(attribution[m]))
+            ave_att.append(np.nanmean(att))
         
         if calculate_threshold:
             norm_att = ave_att

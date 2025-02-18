@@ -12,6 +12,7 @@ class Dataset():
         self.batch_size = batch_size
         self.random_idxs = None
         self.memory = deque()
+        self.labels = deque()
         self.batch_num = 0
         self.counter = 0
     
@@ -19,12 +20,10 @@ class Dataset():
         self.random_idxs = np.arange(0, len(self.memory))
         np.random.shuffle(self.random_idxs)
     
-    def load(self, folder_path):
-        # data is stored as numpy array
-        files = glob.glob(os.path.join(folder_path, "*.npy"))
-        for file in files:
-            data = np.load(file, allow_pickle=True)
-            self.memory = self.concatenate(self.memory, data)
+    def add_data(self, data, labels):
+        assert len(data) == len(labels)
+        self.memory = self.concatenate(self.memory, data)
+        self.labels = self.concatenate(self.labels, labels)
         self._set_batch_num()
         self.counter = 0
         self.random_idxs = np.random.permutation(len(self.memory))
@@ -37,11 +36,13 @@ class Dataset():
     def get_batch(self):
         if (self.index() + self.batch_size) > len((self.memory)):
             data = self.memory[self.random_idxs[self.index():]]
+            labels = self.labels[self.random_idxs[self.index():]]
         else:
             data = self.memory[self.random_idxs[self.index():self.index()+self.batch_size]]
+            labels = self.labels[self.random_idxs[self.index():self.index()+self.batch_size]]
         
         self.counter += 1
-        return data
+        return data, labels
     
     @staticmethod
     def concatenate(arr1, arr2):

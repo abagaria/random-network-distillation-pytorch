@@ -103,11 +103,10 @@ def main():
             agent.rnd.target.load_state_dict(torch.load(target_path, map_location='cpu'))
         print('load finished!')
 
-    attribute = Attribute(agent.rnd.predictor,
-                          agent.rnd.target,
-                          agent.device,
-                          attribution_type="deep_lift_shap",
-                          segmentation_type="sam")
+    attribute = Attribute(agent.device,
+                          predict_model=agent.rnd.predictor,
+                          target_model=agent.rnd.target,
+                          attribution_type="deep_lift_shap")
 
     works = []
     parent_conns = []
@@ -239,6 +238,7 @@ def main():
                         most_int_states[idxs[a_idx]],
                         high_rnd_reward[idxs[a_idx]],
                         rewards[idxs[a_idx]],
+                        log_rewards[idxs[a_idx]],
                         most_int_infos[idxs[a_idx]],
                         dones[idxs[a_idx]],
                         reward_tracker.mean(),
@@ -255,6 +255,7 @@ def main():
                     next_obs[e_idx],
                     intrinsic_reward[e_idx],
                     rewards[e_idx],
+                    log_rewards[e_idx],
                     infos[e_idx],
                     dones[e_idx],
                     reward_tracker.mean(),

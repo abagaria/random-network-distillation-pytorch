@@ -20,16 +20,17 @@ TYPES = [
 
 class Attribute():
     def __init__(self,
-                 predict_model,
-                 target_model,
                  device,
+                 model=None,
+                 predict_model=None,
+                 target_model=None,
                  threshold=0.8,
                  attribution_type="deep_lift_shap",
-                 segmentation_type="sam",
                  **kwargs):
-        model_wrapper = RNDModelWrapper(predict_model, target_model)
+        if predict_model is not None and target_model is not None:
+            model = RNDModelWrapper(predict_model, target_model)
         self.ave_baselines = None
-        self.attribution = self._get_attribution(attribution_type, model_wrapper)
+        self.attribution = self._get_attribution(attribution_type, model)
         self.device = device
         self.type = attribution_type
         self.threshold = threshold

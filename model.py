@@ -157,6 +157,71 @@ class CnnActorCriticNetwork(nn.Module):
         value_int = self.critic_int(self.extra_layer(x) + x)
         return policy, value_ext, value_int
 
+class RewardModel(nn.Module):
+    def __init__(self, use_noisy_net=False):
+        if use_noisy_net:
+            linear = NoisyLinear
+        else:
+            linear = nn.Linear
+        
+        self.feature = nn.Sequential(
+            nn.Conv2d(
+                in_channel=1,
+                out_channel=32,
+                kernel_size=8,
+                stride=4
+            ),
+            nn.ReLU(),
+            nn.Conv2d(
+                in_channels=32,
+                out_channels=64,
+                kernel_size=4,
+                stride=2
+            ),
+            nn.ReLU(),
+            nn.Conv2d(
+                in_channels=64,
+                out_channels=64,
+                kernel_size=3,
+                stride=1
+            ),
+            nn.ReLU(),
+            Flatten(),
+            linear(7*7*64, 256),
+            nn.ReLU(),
+            linear(256, 448),
+            nn.ReLU()
+        )
+        
+        self.extra_layer = nn.Sequential(
+            linear(448, 448),
+            nn.ReLU()
+        )
+        
+        self.final_layer = linear(448, 1)
+        
+        for p in self.modules():
+            if isinstance(p, nn.Conv2d):
+                init.orthogonal_(p.weight, np.sqrt(2))
+                p.bias.data.zero_()
+        
+            if isinstance(p, nn.Linear):
+                init.orthogonal_(p.weight, np.sqrt(2))
+                p.bias.data.zero_()
+        
+        init.orthogonal_(self.final_layer.weight, 0.01)
+        self.final_layer.bias.data.zero_()
+        
+        for i in range(len(self.extra_layer)):
+            if type(self.extra_layer[i]) == nn.Linear:
+                init.orthogonal_(self.extra_layer[i].weight, 0.1)
+                self.extra_layer[i].bias.data.zero_()
+        
+    def forward(self, state):
+        x = self.feature(state)
+        return self.final_layer(self.extra_layer(x) + x)
+                    
+
 class RNDPredictor(nn.Module):
     def __init__(self, feature_output=3136):
         super().__init__()
