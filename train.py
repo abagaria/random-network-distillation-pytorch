@@ -211,7 +211,7 @@ def main():
             high_rnd_reward[new_high_mask] = intrinsic_reward[new_high_mask]
             most_int_infos = [infos[i] if new_high_mask[i] else most_int_infos[i] for i in range(len(new_high_mask))]
             
-            attribute_mask = high_rnd_reward > (reward_tracker.mean() + 2*reward_tracker.std())
+            attribute_mask = high_rnd_reward > (reward_tracker.mean() + reward_tracker.std())
             attribute_mask = attribute_mask & dones
             
             if any(attribute_mask):

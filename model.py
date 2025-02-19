@@ -159,6 +159,7 @@ class CnnActorCriticNetwork(nn.Module):
 
 class RewardModel(nn.Module):
     def __init__(self, use_noisy_net=False):
+        super(RewardModel, self).__init__()
         if use_noisy_net:
             linear = NoisyLinear
         else:
@@ -166,8 +167,8 @@ class RewardModel(nn.Module):
         
         self.feature = nn.Sequential(
             nn.Conv2d(
-                in_channel=1,
-                out_channel=32,
+                in_channels=1,
+                out_channels=32,
                 kernel_size=8,
                 stride=4
             ),
