@@ -30,8 +30,9 @@ def create_positive_training_set(data_dir: str):
     
     for data_point in tqdm(all_data):
         if data_point["step_extrinsic_reward"] != 0:
-            states.append(data_point['state'])
-            reward.append(data_point['step_extrinsic_reward'])
+            if np.random.rand() < 0.75:
+                states.append(data_point['state'])
+                reward.append(data_point['step_extrinsic_reward'])
     
     save_dict = {
         'states': states,
@@ -111,7 +112,7 @@ def create_classifiers_from_model(model: RewardModel,
     attribute = Attribute(device,
                           model=model,
                           attribution_type="deep_lift_shap")
-    all_data = random.sample(positive_data['states'], k=4000)
+    all_data = random.sample(positive_data['states'], k=2000)
     with open(os.path.join(negative_data_dir, 'negative_data.pkl'), 'rb') as f:
         baselines = pickle.load(f)
         baselines = random.sample(baselines['states'], k=1000)
@@ -131,7 +132,7 @@ def create_classifiers_from_model(model: RewardModel,
         if att_type == "random":
             base = torch.rand((5,1,84,84)).float().to(attribute.device)
         elif att_type == "states":
-            base = np.stack(random.sample(baselines, k=5))
+            base = np.stack(random.sample(baselines, k=20))
             base = torch.from_numpy(base).float().to(attribute.device)
         
         attributions = attribute.analyze_state(np.expand_dims(state, axis=0), 
@@ -226,6 +227,8 @@ if __name__ == "__main__":
     parser.add_argument("--reward_model_dir", type=str, default="reward_model")
     parser.add_argument("--neg_data", type=str, default="resources/negative_data")
     
+    print("Creating extrinsic reward classifiers")
+    
     args = parser.parse_args()
     
     segmentor = Segmentor()
@@ -236,7 +239,10 @@ if __name__ == "__main__":
     
     positive_data = create_positive_training_set(args.data_dir)
     
+    print("Positive data collected")
+    
     if args.train_model:
+        print("training model")
         dataset = get_dataset(positive_data,
                               args.neg_data)
         reward_model = train_model(dataset,
@@ -248,6 +254,7 @@ if __name__ == "__main__":
         del dataset
         gc.collect()
     else:
+        print("loading model")
         assert os.path.exists(os.path.join(args.reward_model_dir,
                                            "reward.model"))
         reward_model.load_state_dict(torch.load(
@@ -255,6 +262,7 @@ if __name__ == "__main__":
                          "reward.model")
         ))
     
+    print("creating classifiers")
     classifiers = create_classifiers_from_model(reward_model,
                                                 positive_data,
                                                 args.neg_data,
