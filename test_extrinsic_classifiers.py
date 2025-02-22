@@ -6,12 +6,16 @@ from typing import List, Dict
 import glob
 
 from salient_event import classifier as classifier_lib
+from create_subgoal_classifiers import load_all_data
+from tqdm import tqdm, trange
 
 def plot_classifier_positive(classifier: Dict,
                              states: List,
                              rewards: List,
                              output_dir: str):
-    fig, axes = plt.subplot(4,4)
+    os.makedirs(output_dir, exist_ok=True)
+    
+    fig, axes = plt.subplots(4,4, figsize=(36,24))
     
     bboxes = list(classifier['salient_patches'].keys())
     
@@ -23,13 +27,14 @@ def plot_classifier_positive(classifier: Dict,
             ax.add_patch(rect)
         ax.set_title(f"Reward: {reward}")
         ax.axis('off')
-    
-    add_bboxes(axes[0], classifier['prototype_image'], "-", bboxes)
+        
+    add_bboxes(axes[0,0], classifier['prototype_image'], "-", bboxes)
     
     ax_idx = 1
     
     for state, reward in zip(states, rewards):
-        add_bboxes(axes[ax_idx], state, reward, bboxes)
+        add_bboxes(axes[ax_idx//4, ax_idx%4], state, reward, bboxes)
+        ax_idx += 1
     
     output_path = os.path.join(
         output_dir,
@@ -46,14 +51,33 @@ def get_all_classifiers(save_dir):
     
     return classifiers
 
-def test_classifiers(data_file: str,
+def get_data(data_dir: str):
+    all_data = load_all_data(data_dir)
+    
+    states = []
+    reward = []
+    
+    for data_point in tqdm(all_data):
+        if data_point["step_extrinsic_reward"] != 0:
+            if np.random.rand() < 0.15:
+                states.append(data_point['state'])
+                reward.append(data_point['step_extrinsic_reward'])
+    
+    save_dict = {
+        'states': states,
+        'rewards': reward
+    }
+    
+    print(f"Found {len(states)} positive states")
+    
+    return save_dict
+
+def test_classifiers(data_points: Dict,
                      classifiers: List,
                      plot_dir: str):
     
-    with open(data_file, 'rb') as f:
-        data_points = pickle.load(f)
-    
-    for classifier in classifiers:
+    print("testing classifiers")
+    for classifier in tqdm(classifiers):
         states = []
         rewards = []
         for idx in range(len(data_points["states"])):
@@ -73,12 +97,26 @@ def test_classifiers(data_file: str,
                                  states,
                                  rewards,
                                  plot_dir)
+    print("classifiers tested")
 
 if __name__ == "__main__":
-    classifier_dir = "classifiers_ext"
-    plot_dir = "ext_test"
+    
+    classifier_dir = "run_6/ext_classifiers6_calcThresh_rand"
+    plot_dir = "ext_no_reward_test"
+    data_dir = "rnd_lifetime_data6"
     
     
     classifiers = get_all_classifiers(classifier_dir)
+    data = get_data(data_dir)
+    
+    # with open("resources/negative_data/negative_data.pkl", "rb") as f:
+    #     data = pickle.load(f)
+    
+    print(len(classifiers))
+    test_classifiers(data,
+                     classifiers,
+                     plot_dir)
+    
+    
 
 
