@@ -30,7 +30,7 @@ def create_positive_training_set(data_dir: str):
     
     for data_point in tqdm(all_data):
         if data_point["step_extrinsic_reward"] != 0:
-            if np.random.rand() < 0.75:
+            if np.random.rand() < 0.5:
                 states.append(data_point['state'])
                 reward.append(data_point['step_extrinsic_reward'])
     
