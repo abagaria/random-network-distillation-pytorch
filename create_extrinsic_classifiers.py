@@ -31,7 +31,7 @@ def create_positive_training_set(data_dir: str):
     
     for data_point in tqdm(all_data):
         if data_point["step_extrinsic_reward"] != 0:
-            if np.random.rand() < 0.5:
+            if np.random.rand() < 0.05:
                 states.append(data_point['state'])
                 reward.append(data_point['step_extrinsic_reward'])
     
@@ -113,7 +113,8 @@ def create_classifiers_from_model(model: RewardModel,
     attribute = Attribute(device,
                           model=model,
                           attribution_type="deep_lift_shap")
-    all_data = random.sample(positive_data['states'], k=2000)
+    all_data = random.sample(positive_data['states'], k=20)
+    # all_data = random.sample(positive_data['states'], k=2000)
     with open(os.path.join(negative_data_dir, 'negative_data.pkl'), 'rb') as f:
         baselines = pickle.load(f)
         baselines = random.sample(baselines['states'], k=1000)
@@ -133,7 +134,7 @@ def create_classifiers_from_model(model: RewardModel,
         if att_type == "random":
             base = torch.rand((5,1,84,84)).float().to(attribute.device)
         elif att_type == "states":
-            base = np.stack(random.sample(baselines, k=20))
+            base = np.stack(random.sample(baselines, k=200))
             base = torch.from_numpy(base).float().to(attribute.device)
         
         attributions = attribute.analyze_state(np.expand_dims(state, axis=0), 
@@ -143,6 +144,7 @@ def create_classifiers_from_model(model: RewardModel,
         ave_att = []
         for m in segments:
             att = attributions[m]
+            att_mean = np.mean(att)
             if math.isnan(att_mean):
                 att_mean = 0
             ave_att.append(att_mean)
