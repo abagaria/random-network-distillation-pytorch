@@ -31,7 +31,7 @@ def create_positive_training_set(data_dir: str):
     
     for data_point in tqdm(all_data):
         if data_point["step_extrinsic_reward"] != 0:
-            if np.random.rand() < 0.05:
+            if np.random.rand() < 0.5:
                 states.append(data_point['state'])
                 reward.append(data_point['step_extrinsic_reward'])
     
@@ -113,8 +113,8 @@ def create_classifiers_from_model(model: RewardModel,
     attribute = Attribute(device,
                           model=model,
                           attribution_type="deep_lift_shap")
-    all_data = random.sample(positive_data['states'], k=20)
-    # all_data = random.sample(positive_data['states'], k=2000)
+    # all_data = random.sample(positive_data['states'], k=20)
+    all_data = random.sample(positive_data['states'], k=2000)
     with open(os.path.join(negative_data_dir, 'negative_data.pkl'), 'rb') as f:
         baselines = pickle.load(f)
         baselines = random.sample(baselines['states'], k=1000)
