@@ -142,8 +142,7 @@ def create_classifiers_from_model(model: RewardModel,
         ave_att = []
         for m in segments:
             att = attributions[m]
-            att[att==0] = np.nan
-            ave_att.append(np.nanmean(att))
+            ave_att.append(np.mean(att))
         
         if calculate_threshold:
             norm_att = ave_att

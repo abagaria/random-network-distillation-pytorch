@@ -117,7 +117,6 @@ def create_classifiers_from_data(data_dir: str,
             continue
         
         state = data_point['state'].squeeze(0)
-        
         state_seg = state.astype(np.uint8)
         
         state_seg = cv2.cvtColor(state_seg, cv2.COLOR_GRAY2RGB)
@@ -125,11 +124,8 @@ def create_classifiers_from_data(data_dir: str,
         attribution = data_point[f'attribution_{att_type}'].squeeze()
         ave_att = []
         for m in segments:
-            # to ignore zero values in image set 0 to nan
-            # and use nanmean
             att = attribution[m]
-            att[att==0] = np.nan
-            ave_att.append(np.nanmean(att))
+            ave_att.append(np.mean(att))
         
         if calculate_threshold:
             norm_att = ave_att
