@@ -19,6 +19,7 @@ import argparse
 from model import RewardModel
 from dataset.dataset import Dataset
 from attribute.attribution import Attribute
+import math
 
 from create_subgoal_classifiers import plot_classifier, plot_classifier_comparison, load_all_data, save_classifiers
 
@@ -142,7 +143,9 @@ def create_classifiers_from_model(model: RewardModel,
         ave_att = []
         for m in segments:
             att = attributions[m]
-            ave_att.append(np.mean(att))
+            if math.isnan(att_mean):
+                att_mean = 0
+            ave_att.append(att_mean)
         
         if calculate_threshold:
             norm_att = ave_att

@@ -11,6 +11,7 @@ from salient_event import classifier as classifier_lib
 from attribute.segmentor import Segmentor
 import cv2
 import argparse
+import math
 
 
 def plot_classifier(classifier: Dict, output_dir: str):
@@ -125,7 +126,10 @@ def create_classifiers_from_data(data_dir: str,
         ave_att = []
         for m in segments:
             att = attribution[m]
-            ave_att.append(np.mean(att))
+            att_mean = np.mean(att)
+            if math.isnan(att_mean):
+                att_mean = 0
+            ave_att.append(att_mean)
         
         if calculate_threshold:
             norm_att = ave_att
