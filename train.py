@@ -11,8 +11,14 @@ import numpy as np
 from data_logger import DataLogger, StatTracker
 from attribute.attribution import Attribute
 
+import matplotlib.pyplot as plt
+import os
 
 def main():
+    
+    # os.makedirs('state_plots', exist_ok=True)
+    # counter = 0
+    
     print({section: dict(config[section]) for section in config.sections()})
     train_method = default_config['TrainMethod']
     env_id = default_config['EnvID']
@@ -198,13 +204,27 @@ def main():
             intrinsic_reward = np.hstack(intrinsic_reward)
             sample_i_rall += intrinsic_reward[sample_env_idx]
             
-            reward_tracker.update(intrinsic_reward)
+            uncontrollable = [info["uncontrollable"] for info in infos]
+            uncontrollable = np.array(uncontrollable, dtype=bool)
+            
+            # for x in range(len(intrinsic_reward)):
+            #     plt.imshow(np.squeeze(next_obs[x]))
+            #     plt.title(f'reward:{intrinsic_reward[x]}\n' + 
+            #               f'uncontrollable: {uncontrollable[x]} ' +
+            #               f'novel: {~uncontrollable[x] and (intrinsic_reward[x] > (reward_tracker.mean() + 1*reward_tracker.std()))}')
+            #     plt.savefig(f'state_plots/{counter}.png')
+            #     counter += 1
+                
+            
+            
+            reward_tracker.update(intrinsic_reward[~uncontrollable])
+            # print(intrinsic_reward[~uncontrollable])
+            # print(reward_tracker.std())
+            # print(reward_tracker.mean())
             new_low_mask = intrinsic_reward < low_rnd_reward
             least_int_states[new_low_mask] = next_obs[new_low_mask]
             low_rnd_reward[new_low_mask] = intrinsic_reward[new_low_mask]
             
-            uncontrollable = [info["uncontrollable"] for info in infos]
-            uncontrollable = np.array(uncontrollable, dtype=bool)
             new_high_mask = intrinsic_reward > high_rnd_reward
             new_high_mask = new_high_mask & ~uncontrollable
             most_int_states[new_high_mask] = next_obs[new_high_mask]
@@ -214,7 +234,7 @@ def main():
             attribute_mask = high_rnd_reward > (reward_tracker.mean() + reward_tracker.std())
             attribute_mask = attribute_mask & dones
             
-            if any(attribute_mask):
+            if any(attribute_mask) and (global_update > 1):
                 att_states = torch.from_numpy(most_int_states[attribute_mask]).float().to(attribute.device)
                 base = torch.from_numpy(np.stack([
                     initial_state/255.0,
@@ -231,6 +251,7 @@ def main():
                 base = torch.from_numpy(base).float().to(attribute.device)
                 attributions_low = attribute.analyze_state(most_int_states[attribute_mask],
                                                            base)
+                
                 
                 idxs = np.where(attribute_mask)[0]
                 for a_idx in range(len(attributions_init)):
